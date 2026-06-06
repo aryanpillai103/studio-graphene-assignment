@@ -7,7 +7,7 @@ import TaskList from './components/TaskList';
 import FilterBar from './components/FilterBar';
 import TaskStats from './components/TaskStats';
 
-const API_URL = '/api/tasks';
+const API_URL = import.meta.env.VITE_API_URL || '/api/tasks';
 
 function App() {
   const [tasks, setTasks] = useState([]);
