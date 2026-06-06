@@ -5,8 +5,14 @@ const tasksRouter = require('./routes/tasks');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// CORS configuration for production
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  optionsSuccessStatus: 200
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Routes
@@ -18,6 +24,7 @@ app.get('/api/health', (req, res) => {
     status: 'ok', 
     message: 'Server is running!',
     timestamp: new Date().toISOString(),
+    storage: 'JSON File',
     endpoints: {
       getTasks: 'GET /api/tasks',
       createTask: 'POST /api/tasks',
@@ -28,7 +35,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 404 handler for unknown routes
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
@@ -39,11 +46,11 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// Start server
 app.listen(PORT, () => {
   console.log('🚀 Server is running!');
   console.log(`📍 URL: http://localhost:${PORT}`);
   console.log(`📋 Health check: http://localhost:${PORT}/api/health`);
   console.log(`📝 Tasks API: http://localhost:${PORT}/api/tasks`);
+  console.log(`💾 Storage: JSON File`);
   console.log('\n✨ Ready to accept requests!\n');
 });

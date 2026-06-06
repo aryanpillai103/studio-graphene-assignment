@@ -10,31 +10,7 @@ const db = require('../database');
 router.get('/', (req, res) => {
   try {
     const { status, search } = req.query;
-    
-    // Start building the SQL query
-    let query = 'SELECT * FROM tasks WHERE 1=1';
-    const params = [];
-
-    // Add status filter if provided
-    if (status === 'active') {
-      query += ' AND completed = 0';
-    } else if (status === 'completed') {
-      query += ' AND completed = 1';
-    }
-
-    // Add search filter if provided
-    if (search) {
-      query += ' AND title LIKE ?';
-      params.push(`%${search}%`);
-    }
-
-    // Always order by newest first
-    query += ' ORDER BY created_at DESC';
-    
-    // Execute the query
-    const tasks = db.prepare(query).all(...params);
-    
-    // Return tasks as JSON
+    const tasks = db.getTasks({ status, search });
     res.json(tasks);
   } catch (error) {
     console.error('Error fetching tasks:', error);
@@ -55,20 +31,20 @@ router.post('/', (req, res) => {
       return res.status(400).json({ error: 'Title is required' });
     }
 
-    // Generate unique ID and timestamp
-    const id = uuidv4();
+    // Create new task object
     const now = new Date().toISOString();
+    const task = {
+      id: uuidv4(),
+      title: title.trim(),
+      description: description.trim(),
+      due_date: dueDate,
+      completed: 0,
+      created_at: now,
+      updated_at: now
+    };
 
-    // Insert the new task
-    const stmt = db.prepare(`
-      INSERT INTO tasks (id, title, description, due_date, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(id, title.trim(), description.trim(), dueDate, now, now);
-
-    // Fetch and return the created task
-    const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+    // Save to database
+    db.addTask(task);
     
     console.log(`✅ Task created: ${task.title}`);
     res.status(201).json(task);
@@ -88,45 +64,24 @@ router.put('/:id', (req, res) => {
     const { title, description, dueDate, completed } = req.body;
 
     // Check if task exists
-    const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
-    if (!task) {
+    const existingTask = db.findTaskById(id);
+    if (!existingTask) {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    // Build dynamic update query
-    const now = new Date().toISOString();
-    const updates = [];
-    const params = [];
+    // Build updates object
+    const updates = {
+      updated_at: new Date().toISOString()
+    };
 
     // Only update fields that were provided
-    if (title !== undefined) {
-      updates.push('title = ?');
-      params.push(title.trim());
-    }
-    if (description !== undefined) {
-      updates.push('description = ?');
-      params.push(description.trim());
-    }
-    if (dueDate !== undefined) {
-      updates.push('due_date = ?');
-      params.push(dueDate);
-    }
-    if (completed !== undefined) {
-      updates.push('completed = ?');
-      params.push(completed ? 1 : 0);
-    }
+    if (title !== undefined) updates.title = title.trim();
+    if (description !== undefined) updates.description = description.trim();
+    if (dueDate !== undefined) updates.due_date = dueDate;
+    if (completed !== undefined) updates.completed = completed ? 1 : 0;
 
-    // Always update the timestamp
-    updates.push('updated_at = ?');
-    params.push(now);
-    params.push(id); // For WHERE clause
-
-    // Execute update
-    const stmt = db.prepare(`UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`);
-    stmt.run(...params);
-
-    // Return updated task
-    const updatedTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+    // Update task
+    const updatedTask = db.updateTask(id, updates);
     
     console.log(`✅ Task updated: ${updatedTask.title}`);
     res.json(updatedTask);
@@ -144,13 +99,13 @@ router.delete('/:id', (req, res) => {
     const { id } = req.params;
     
     // Check if task exists
-    const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+    const task = db.findTaskById(id);
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
 
     // Delete the task
-    db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
+    db.deleteTask(id);
     
     console.log(`🗑️ Task deleted: ${task.title}`);
     res.json({ 
@@ -171,20 +126,18 @@ router.patch('/:id/toggle', (req, res) => {
     const { id } = req.params;
     
     // Check if task exists
-    const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+    const task = db.findTaskById(id);
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
 
     // Toggle the completed status
-    const now = new Date().toISOString();
-    const newCompleted = task.completed ? 0 : 1;
-    
-    db.prepare('UPDATE tasks SET completed = ?, updated_at = ? WHERE id = ?')
-      .run(newCompleted, now, id);
+    const updates = {
+      completed: task.completed ? 0 : 1,
+      updated_at: new Date().toISOString()
+    };
 
-    // Return updated task
-    const updatedTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+    const updatedTask = db.updateTask(id, updates);
     
     const status = updatedTask.completed ? 'completed' : 'active';
     console.log(`🔄 Task toggled to ${status}: ${updatedTask.title}`);

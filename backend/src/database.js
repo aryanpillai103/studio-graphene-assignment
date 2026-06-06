@@ -1,28 +1,114 @@
-const Database = require('better-sqlite3');
+const fs = require('fs');
 const path = require('path');
 
-// Create or connect to SQLite database file
-// path.join ensures it works on all operating systems
-const db = new Database(path.join(__dirname, '..', 'tasks.db'));
+// Use environment variable for production, local path for development
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'tasks.json');
 
-// Enable WAL mode for better performance
-// WAL = Write-Ahead Logging - allows simultaneous reads and writes
-db.pragma('journal_mode = WAL');
+// Initialize database file if it doesn't exist
+function initializeDatabase() {
+  if (!fs.existsSync(DB_PATH)) {
+    fs.writeFileSync(DB_PATH, JSON.stringify([], null, 2));
+    console.log('✅ Created new tasks.json database file');
+  }
+}
 
-// Create tasks table if it doesn't already exist
-db.exec(`
-  CREATE TABLE IF NOT EXISTS tasks (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
-    description TEXT DEFAULT '',
-    due_date TEXT,
-    completed INTEGER DEFAULT 0,
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now'))
-  )
-`);
+// Read all tasks from JSON file
+function readTasks() {
+  try {
+    initializeDatabase();
+    const data = fs.readFileSync(DB_PATH, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error reading database:', error);
+    return [];
+  }
+}
 
-console.log('✅ Database connected and tasks table ready');
+// Write tasks to JSON file
+function writeTasks(tasks) {
+  try {
+    fs.writeFileSync(DB_PATH, JSON.stringify(tasks, null, 2));
+    return true;
+  } catch (error) {
+    console.error('Error writing to database:', error);
+    return false;
+  }
+}
 
-// Export the database instance so other files can use it
-module.exports = db;
+// Find a task by ID
+function findTaskById(id) {
+  const tasks = readTasks();
+  return tasks.find(task => task.id === id);
+}
+
+// Add a new task
+function addTask(task) {
+  const tasks = readTasks();
+  tasks.push(task);
+  writeTasks(tasks);
+  return task;
+}
+
+// Update a task
+function updateTask(id, updates) {
+  const tasks = readTasks();
+  const index = tasks.findIndex(task => task.id === id);
+  
+  if (index === -1) return null;
+  
+  // Update only provided fields
+  tasks[index] = { ...tasks[index], ...updates };
+  writeTasks(tasks);
+  return tasks[index];
+}
+
+// Delete a task
+function deleteTask(id) {
+  const tasks = readTasks();
+  const index = tasks.findIndex(task => task.id === id);
+  
+  if (index === -1) return null;
+  
+  const deletedTask = tasks[index];
+  tasks.splice(index, 1);
+  writeTasks(tasks);
+  return deletedTask;
+}
+
+// Get all tasks with optional filters
+function getTasks({ status, search } = {}) {
+  let tasks = readTasks();
+  
+  // Filter by status
+  if (status === 'active') {
+    tasks = tasks.filter(task => !task.completed);
+  } else if (status === 'completed') {
+    tasks = tasks.filter(task => task.completed);
+  }
+  
+  // Search by title (case-insensitive)
+  if (search) {
+    const searchLower = search.toLowerCase();
+    tasks = tasks.filter(task => 
+      task.title.toLowerCase().includes(searchLower)
+    );
+  }
+  
+  // Sort by created_at descending (newest first)
+  tasks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  
+  return tasks;
+}
+
+// Initialize on module load
+initializeDatabase();
+
+module.exports = {
+  readTasks,
+  writeTasks,
+  findTaskById,
+  addTask,
+  updateTask,
+  deleteTask,
+  getTasks
+};
