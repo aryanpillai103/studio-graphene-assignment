@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import useDarkMode from './hooks/useDarkMode';
+import DarkModeToggle from './components/DarkModeToggle';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
 import FilterBar from './components/FilterBar';
@@ -13,6 +15,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isDark, toggleDarkMode] = useDarkMode();
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -38,10 +41,17 @@ function App() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e) => {
+      // Toggle dark mode: Ctrl+Shift+D
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        toggleDarkMode();
+      }
+      // Focus search: Ctrl+K
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         document.querySelector('[data-search-input]')?.focus();
       }
+      // New task: Ctrl+N
       if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
         e.preventDefault();
         document.querySelector('[data-title-input]')?.focus();
@@ -49,7 +59,7 @@ function App() {
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);
+  }, [toggleDarkMode]);
 
   const addTask = async (taskData) => {
     try {
@@ -95,27 +105,38 @@ function App() {
   const completedCount = tasks.filter(task => task.completed).length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
+      
+      {/* Dark Mode Toggle */}
+      <DarkModeToggle isDark={isDark} onToggle={toggleDarkMode} />
+
       <div className="max-w-4xl mx-auto px-4 py-6 sm:py-10">
         
         {/* Header */}
         <header className="text-center mb-8">
-          <div className="bg-gradient-to-br from-primary-500 via-primary-600 to-purple-600 text-white rounded-2xl p-8 sm:p-12 shadow-xl shadow-primary-500/20">
+          <div className="bg-gradient-to-br from-primary-500 via-primary-600 to-purple-600 
+            dark:from-primary-700 dark:via-primary-800 dark:to-purple-800
+            text-white rounded-2xl p-8 sm:p-12 shadow-xl shadow-primary-500/20 
+            dark:shadow-primary-900/30 transition-colors duration-300">
             <h1 className="text-4xl sm:text-5xl font-bold mb-3 flex items-center justify-center gap-3">
               <span className="text-4xl">📝</span>
               Task Manager
             </h1>
-            <p className="text-primary-100 text-lg font-light">
+            <p className="text-primary-100 dark:text-primary-200 text-lg font-light">
               Stay organized and productive
             </p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-primary-200 text-sm">
-              <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-lg">
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-primary-200 dark:text-primary-300 text-sm">
+              <span className="flex items-center gap-1.5 bg-white/10 dark:bg-white/5 px-3 py-1.5 rounded-lg backdrop-blur-sm">
                 <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs font-mono">Ctrl+N</kbd>
                 <span>New Task</span>
               </span>
-              <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-lg">
+              <span className="flex items-center gap-1.5 bg-white/10 dark:bg-white/5 px-3 py-1.5 rounded-lg backdrop-blur-sm">
                 <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs font-mono">Ctrl+K</kbd>
                 <span>Search</span>
+              </span>
+              <span className="flex items-center gap-1.5 bg-white/10 dark:bg-white/5 px-3 py-1.5 rounded-lg backdrop-blur-sm">
+                <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs font-mono">Ctrl+Shift+D</kbd>
+                <span>{isDark ? 'Light' : 'Dark'} Mode</span>
               </span>
             </div>
           </div>
@@ -126,14 +147,18 @@ function App() {
           
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl flex justify-between items-center animate-slide-down shadow-sm">
+            <div className="bg-red-50 dark:bg-red-900/20 
+              border border-red-200 dark:border-red-800 
+              text-red-700 dark:text-red-400 
+              px-6 py-4 rounded-xl flex justify-between items-center 
+              animate-slide-down shadow-sm transition-colors duration-300">
               <div className="flex items-center gap-2">
                 <span className="text-lg">⚠️</span>
                 <span className="text-sm sm:text-base">{error}</span>
               </div>
               <button 
                 onClick={() => setError(null)} 
-                className="text-red-400 hover:text-red-600 text-2xl leading-none ml-4 transition-colors"
+                className="text-red-400 hover:text-red-600 dark:hover:text-red-300 text-2xl leading-none ml-4 transition-colors"
               >
                 ×
               </button>
@@ -157,8 +182,9 @@ function App() {
           {/* Loading or Task List */}
           {loading ? (
             <div className="text-center py-16">
-              <div className="inline-block w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mb-4"></div>
-              <p className="text-gray-500 text-lg">Loading tasks...</p>
+              <div className="inline-block w-12 h-12 border-4 border-primary-200 dark:border-primary-800 
+                border-t-primary-600 dark:border-t-primary-400 rounded-full animate-spin mb-4"></div>
+              <p className="text-gray-500 dark:text-gray-400 text-lg">Loading tasks...</p>
             </div>
           ) : (
             <TaskList
@@ -171,8 +197,11 @@ function App() {
         </main>
 
         {/* Footer */}
-        <footer className="text-center mt-12 pb-6 text-gray-400 text-sm">
+        <footer className="text-center mt-12 pb-6 text-gray-400 dark:text-gray-600 text-sm transition-colors duration-300">
           <p>Built with ❤️ using React, Node.js & Tailwind CSS</p>
+          <p className="mt-1 text-xs">
+            Press <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs font-mono">Ctrl+Shift+D</kbd> to toggle dark mode
+          </p>
         </footer>
       </div>
     </div>

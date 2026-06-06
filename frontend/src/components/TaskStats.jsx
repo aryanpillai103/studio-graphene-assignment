@@ -20,26 +20,26 @@ function TaskStats({ activeCount, completedCount }) {
     { 
       count: totalCount, 
       label: 'Total', 
-      gradient: 'from-blue-50 to-blue-100', 
-      border: 'border-blue-200',
-      textColor: 'text-blue-700',
-      labelColor: 'text-blue-600'
+      gradient: 'from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20', 
+      border: 'border-blue-200 dark:border-blue-800',
+      textColor: 'text-blue-700 dark:text-blue-300',
+      labelColor: 'text-blue-600 dark:text-blue-400'
     },
     { 
       count: activeCount, 
       label: 'Active', 
-      gradient: 'from-orange-50 to-orange-100', 
-      border: 'border-orange-200',
-      textColor: 'text-orange-700',
-      labelColor: 'text-orange-600'
+      gradient: 'from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20', 
+      border: 'border-orange-200 dark:border-orange-800',
+      textColor: 'text-orange-700 dark:text-orange-300',
+      labelColor: 'text-orange-600 dark:text-orange-400'
     },
     { 
       count: completedCount, 
       label: 'Done', 
-      gradient: 'from-green-50 to-green-100', 
-      border: 'border-green-200',
-      textColor: 'text-green-700',
-      labelColor: 'text-green-600'
+      gradient: 'from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20', 
+      border: 'border-green-200 dark:border-green-800',
+      textColor: 'text-green-700 dark:text-green-300',
+      labelColor: 'text-green-600 dark:text-green-400'
     },
   ];
 
@@ -66,13 +66,15 @@ function TaskStats({ activeCount, completedCount }) {
 
       {/* Progress Bar */}
       <div className="space-y-1.5">
-        <div className="flex justify-between text-xs text-gray-500">
+        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
           <span>Progress</span>
           <span>{Math.round(progressPercentage)}%</span>
         </div>
-        <div className="bg-gray-200 rounded-full h-2.5 overflow-hidden shadow-inner">
+        <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden shadow-inner">
           <div 
-            className="h-full bg-gradient-to-r from-primary-500 to-purple-500 rounded-full transition-all duration-700 ease-out shadow-sm"
+            className="h-full bg-gradient-to-r from-primary-500 to-purple-500 
+              dark:from-primary-400 dark:to-purple-400 
+              rounded-full transition-all duration-700 ease-out shadow-sm"
             style={{ width: `${progressPercentage}%` }}
           />
         </div>
@@ -80,7 +82,9 @@ function TaskStats({ activeCount, completedCount }) {
 
       {/* Celebration */}
       {showCelebration && (
-        <div className="bg-gradient-to-r from-primary-500 to-purple-600 text-white rounded-xl p-4 text-center animate-slide-down shadow-lg">
+        <div className="bg-gradient-to-r from-primary-500 to-purple-600 
+          dark:from-primary-600 dark:to-purple-700 
+          text-white rounded-xl p-4 text-center animate-slide-down shadow-lg transition-colors duration-300">
           <span className="text-lg font-semibold">🎉 All tasks completed! Great job! 🎉</span>
         </div>
       )}
