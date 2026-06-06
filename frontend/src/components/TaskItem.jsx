@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { format, isPast, parseISO } from 'date-fns';
-import './TaskItem.css';
 
 function TaskItem({ task, onToggle, onDelete, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -9,21 +8,17 @@ function TaskItem({ task, onToggle, onDelete, onUpdate }) {
   const [editedDueDate, setEditedDueDate] = useState(task.due_date || '');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Check if task is overdue
   const isOverdue = task.due_date && !task.completed && isPast(parseISO(task.due_date));
 
-  // Format the due date for display
   const formatDueDate = (dateString) => {
     if (!dateString) return null;
     try {
-      const date = parseISO(dateString);
-      return format(date, 'MMM d, yyyy');
+      return format(parseISO(dateString), 'MMM d, yyyy');
     } catch {
       return null;
     }
   };
 
-  // Format created date
   const formatCreatedDate = (dateString) => {
     try {
       return format(parseISO(dateString), 'MMM d, yyyy');
@@ -32,10 +27,8 @@ function TaskItem({ task, onToggle, onDelete, onUpdate }) {
     }
   };
 
-  // Handle save edit
   const handleSave = () => {
     if (!editedTitle.trim()) return;
-
     onUpdate(task.id, {
       title: editedTitle.trim(),
       description: editedDescription.trim(),
@@ -44,7 +37,6 @@ function TaskItem({ task, onToggle, onDelete, onUpdate }) {
     setIsEditing(false);
   };
 
-  // Handle cancel edit
   const handleCancel = () => {
     setEditedTitle(task.title);
     setEditedDescription(task.description || '');
@@ -52,32 +44,29 @@ function TaskItem({ task, onToggle, onDelete, onUpdate }) {
     setIsEditing(false);
   };
 
-  // Handle delete
   const handleDelete = () => {
     onDelete(task.id);
     setShowDeleteConfirm(false);
   };
 
-  // Keyboard shortcuts for edit mode
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && e.ctrlKey) {
-      handleSave();
-    } else if (e.key === 'Escape') {
-      handleCancel();
-    }
+    if (e.key === 'Enter' && e.ctrlKey) handleSave();
+    else if (e.key === 'Escape') handleCancel();
   };
 
-  // Edit mode
+  // Edit Mode
   if (isEditing) {
     return (
-      <div className="task-item editing">
-        <div className="edit-form">
+      <div className="bg-white rounded-xl border-2 border-primary-400 shadow-lg shadow-primary-500/10 p-4 sm:p-5 animate-fade-in">
+        <div className="space-y-3">
           <input
             type="text"
             value={editedTitle}
             onChange={(e) => setEditedTitle(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="edit-title"
+            className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg 
+              focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 
+              transition-all font-medium outline-none"
             placeholder="Task title"
             autoFocus
           />
@@ -85,76 +74,121 @@ function TaskItem({ task, onToggle, onDelete, onUpdate }) {
             value={editedDescription}
             onChange={(e) => setEditedDescription(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="edit-description"
+            className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg 
+              focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 
+              transition-all resize-none text-sm outline-none"
             placeholder="Description (optional)"
             rows="2"
           />
-          <div className="edit-date">
-            <label>📅 Due date:</label>
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-gray-600">📅 Due date:</label>
             <input
               type="date"
               value={editedDueDate}
               onChange={(e) => setEditedDueDate(e.target.value)}
+              className="px-3 py-2 border-2 border-gray-200 rounded-lg 
+                focus:border-primary-500 transition-all text-sm outline-none"
             />
           </div>
-          <div className="edit-actions">
-            <button onClick={handleSave} className="save-btn">Save</button>
-            <button onClick={handleCancel} className="cancel-btn">Cancel</button>
-          </div>
-          <div className="edit-hint">
-            Press Ctrl+Enter to save, Esc to cancel
+          <div className="flex justify-between items-center pt-2">
+            <span className="text-xs text-gray-400 italic hidden sm:block">
+              Ctrl+Enter to save • Esc to cancel
+            </span>
+            <div className="flex gap-2 w-full sm:w-auto justify-end">
+              <button 
+                onClick={handleSave} 
+                className="btn-primary text-sm px-4 py-2"
+              >
+                Save
+              </button>
+              <button 
+                onClick={handleCancel} 
+                className="btn-secondary text-sm px-4 py-2"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  // Display mode
+  // Display Mode
   return (
-    <div className={`task-item ${task.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}`}>
-      <div className="task-content">
-        <div className="task-left">
-          <input
-            type="checkbox"
-            checked={Boolean(task.completed)}
-            onChange={() => onToggle(task.id)}
-            className="task-checkbox"
-          />
-          <div className="task-info">
-            <h3 className="task-title">{task.title}</h3>
-            {task.description && (
-              <p className="task-description">{task.description}</p>
-            )}
-            <div className="task-meta">
-              {task.due_date && (
-                <span className={`due-date ${isOverdue ? 'overdue-text' : ''}`}>
-                  📅 {formatDueDate(task.due_date)}
-                  {isOverdue && ' ⚠️ Overdue'}
-                </span>
-              )}
-              <span className="created-date">
-                Created: {formatCreatedDate(task.created_at)}
+    <div className={`
+      bg-white rounded-xl border-2 transition-all duration-300 p-4 sm:p-5
+      animate-fade-in group
+      ${task.completed 
+        ? 'opacity-75 bg-gray-50 border-gray-100' 
+        : isOverdue 
+          ? 'border-l-4 border-l-red-500 bg-red-50/30' 
+          : 'border-gray-100 hover:border-primary-300 hover:shadow-md'}`}
+    >
+      <div className="flex items-start gap-3">
+        {/* Checkbox */}
+        <input
+          type="checkbox"
+          checked={Boolean(task.completed)}
+          onChange={() => onToggle(task.id)}
+          className="mt-1 w-5 h-5 rounded border-gray-300 text-primary-600 
+            focus:ring-primary-500 cursor-pointer accent-primary-600 flex-shrink-0"
+        />
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <h3 className={`text-base sm:text-lg font-semibold mb-1 break-words
+            ${task.completed ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+            {task.title}
+          </h3>
+          
+          {task.description && (
+            <p className="text-gray-600 text-sm mb-2 break-words">
+              {task.description}
+            </p>
+          )}
+          
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            {task.due_date && (
+              <span className={`inline-flex items-center gap-1 font-medium
+                ${isOverdue ? 'text-red-500 animate-pulse-soft' : 'text-gray-500'}`}>
+                <span>📅</span>
+                {formatDueDate(task.due_date)}
+                {isOverdue && (
+                  <span className="bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full text-xs font-bold">
+                    Overdue
+                  </span>
+                )}
               </span>
-            </div>
+            )}
+            <span className="text-gray-400">
+              Created: {formatCreatedDate(task.created_at)}
+            </span>
           </div>
         </div>
-        <div className="task-actions">
+
+        {/* Actions - Visible on hover for desktop, always on mobile */}
+        <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
           <button
             onClick={() => setIsEditing(true)}
-            className="action-btn edit-btn"
+            className="p-2 hover:bg-blue-50 rounded-lg transition-colors text-lg"
             title="Edit task"
           >
             ✏️
           </button>
+          
           {showDeleteConfirm ? (
-            <div className="delete-confirm">
-              <span className="confirm-text">Delete?</span>
-              <button onClick={handleDelete} className="confirm-delete-btn">
+            <div className="flex items-center gap-1 bg-red-50 p-1.5 rounded-lg animate-slide-in">
+              <span className="text-xs text-red-600 font-medium whitespace-nowrap">Delete?</span>
+              <button
+                onClick={handleDelete}
+                className="px-2.5 py-1 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded transition-colors"
+              >
                 Yes
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="cancel-delete-btn"
+                className="px-2.5 py-1 bg-gray-500 hover:bg-gray-600 text-white text-xs font-medium rounded transition-colors"
               >
                 No
               </button>
@@ -162,7 +196,7 @@ function TaskItem({ task, onToggle, onDelete, onUpdate }) {
           ) : (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="action-btn delete-btn"
+              className="p-2 hover:bg-red-50 rounded-lg transition-colors text-lg"
               title="Delete task"
             >
               🗑️

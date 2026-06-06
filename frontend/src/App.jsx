@@ -4,29 +4,23 @@ import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
 import FilterBar from './components/FilterBar';
 import TaskStats from './components/TaskStats';
-import './App.css';
 
 const API_URL = '/api/tasks';
 
 function App() {
-  // State management
   const [tasks, setTasks] = useState([]);
-  const [filter, setFilter] = useState('all'); // 'all', 'active', 'completed'
+  const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch tasks from API
   const fetchTasks = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Build query parameters
       const params = {};
       if (filter !== 'all') params.status = filter;
       if (searchQuery) params.search = searchQuery;
-      
       const response = await axios.get(API_URL, { params });
       setTasks(response.data);
     } catch (err) {
@@ -37,23 +31,36 @@ function App() {
     }
   }, [filter, searchQuery]);
 
-  // Fetch tasks when filter or search changes
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
 
-  // Add a new task
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        document.querySelector('[data-search-input]')?.focus();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        document.querySelector('[data-title-input]')?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
+
   const addTask = async (taskData) => {
     try {
       await axios.post(API_URL, taskData);
-      await fetchTasks(); // Refresh the list
+      await fetchTasks();
     } catch (err) {
       setError('Failed to add task. Please try again.');
       console.error('Error adding task:', err);
     }
   };
 
-  // Update a task
   const updateTask = async (id, updates) => {
     try {
       await axios.put(`${API_URL}/${id}`, updates);
@@ -64,7 +71,6 @@ function App() {
     }
   };
 
-  // Delete a task
   const deleteTask = async (id) => {
     try {
       await axios.delete(`${API_URL}/${id}`);
@@ -75,7 +81,6 @@ function App() {
     }
   };
 
-  // Toggle task completion
   const toggleTask = async (id) => {
     try {
       await axios.patch(`${API_URL}/${id}/toggle`);
@@ -86,55 +91,90 @@ function App() {
     }
   };
 
-  // Calculate task statistics
   const activeCount = tasks.filter(task => !task.completed).length;
   const completedCount = tasks.filter(task => task.completed).length;
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>📝 Task Manager</h1>
-        <p className="subtitle">Stay organized and productive</p>
-      </header>
-
-      <main className="app-main">
-        {/* Error Message */}
-        {error && (
-          <div className="error-message">
-            <span>{error}</span>
-            <button onClick={() => setError(null)} className="error-close">×</button>
-          </div>
-        )}
-
-        {/* Task Statistics */}
-        <TaskStats activeCount={activeCount} completedCount={completedCount} />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+      <div className="max-w-4xl mx-auto px-4 py-6 sm:py-10">
         
-        {/* Add Task Form */}
-        <TaskForm onSubmit={addTask} />
-        
-        {/* Filter and Search Bar */}
-        <FilterBar
-          filter={filter}
-          onFilterChange={setFilter}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
-
-        {/* Task List or Loading/Empty State */}
-        {loading ? (
-          <div className="loading-state">
-            <div className="loading-spinner"></div>
-            <p>Loading tasks...</p>
+        {/* Header */}
+        <header className="text-center mb-8">
+          <div className="bg-gradient-to-br from-primary-500 via-primary-600 to-purple-600 text-white rounded-2xl p-8 sm:p-12 shadow-xl shadow-primary-500/20">
+            <h1 className="text-4xl sm:text-5xl font-bold mb-3 flex items-center justify-center gap-3">
+              <span className="text-4xl">📝</span>
+              Task Manager
+            </h1>
+            <p className="text-primary-100 text-lg font-light">
+              Stay organized and productive
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-primary-200 text-sm">
+              <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-lg">
+                <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs font-mono">Ctrl+N</kbd>
+                <span>New Task</span>
+              </span>
+              <span className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-lg">
+                <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs font-mono">Ctrl+K</kbd>
+                <span>Search</span>
+              </span>
+            </div>
           </div>
-        ) : (
-          <TaskList
-            tasks={tasks}
-            onToggle={toggleTask}
-            onDelete={deleteTask}
-            onUpdate={updateTask}
+        </header>
+
+        {/* Main Content */}
+        <main className="space-y-6">
+          
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl flex justify-between items-center animate-slide-down shadow-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">⚠️</span>
+                <span className="text-sm sm:text-base">{error}</span>
+              </div>
+              <button 
+                onClick={() => setError(null)} 
+                className="text-red-400 hover:text-red-600 text-2xl leading-none ml-4 transition-colors"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          {/* Task Statistics */}
+          <TaskStats activeCount={activeCount} completedCount={completedCount} />
+          
+          {/* Add Task Form */}
+          <TaskForm onSubmit={addTask} />
+          
+          {/* Filter and Search Bar */}
+          <FilterBar
+            filter={filter}
+            onFilterChange={setFilter}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
           />
-        )}
-      </main>
+
+          {/* Loading or Task List */}
+          {loading ? (
+            <div className="text-center py-16">
+              <div className="inline-block w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mb-4"></div>
+              <p className="text-gray-500 text-lg">Loading tasks...</p>
+            </div>
+          ) : (
+            <TaskList
+              tasks={tasks}
+              onToggle={toggleTask}
+              onDelete={deleteTask}
+              onUpdate={updateTask}
+            />
+          )}
+        </main>
+
+        {/* Footer */}
+        <footer className="text-center mt-12 pb-6 text-gray-400 text-sm">
+          <p>Built with ❤️ using React, Node.js & Tailwind CSS</p>
+        </footer>
+      </div>
     </div>
   );
 }
