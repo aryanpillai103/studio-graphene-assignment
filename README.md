@@ -1,16 +1,18 @@
 # 📝 Personal Task Manager
 
-A full-stack task management application (glorified to-do list) built for the "Personal Task Manager" exercise. This single-user application allows creating, viewing, updating, and deleting personal tasks with features like filtering, searching, dark mode, and persistent storage using SQLite.
+A full-stack task management application (glorified to-do list) built for the "Personal Task Manager" exercise. This single-user application allows creating, viewing, updating, and deleting personal tasks with features like filtering, searching, dark mode, and persistent storage using JSON file storage.
 
 ---
 
 ## 🌐 Live Demo
 
-**Deployed Application:** [https://task-manager-demo.onrender.com](https://task-manager-demo.onrender.com)
+**Deployed Application:** [https://studio-graphene-assignment-wine.vercel.app](https://studio-graphene-assignment-wine.vercel.app)
 
-**API Base URL:** `https://task-manager-api-demo.onrender.com/api`
+**API Base URL:** `https://task-manager-api-hvco.onrender.com/api`
 
 > **Note:** The backend is hosted on Render's free tier and may take 30-60 seconds to spin up on first request. If the demo link doesn't work, the project might be undeployed to save resources. Follow the local setup instructions below to run it on your machine.
+
+> **Note:** This project has been made with the help of Deepseek.
 
 ---
 
@@ -29,18 +31,21 @@ A full-stack task management application (glorified to-do list) built for the "P
 | Technology | Version | Purpose |
 |------------|---------|---------|
 | **Node.js** | 16+ | JavaScript runtime for server-side execution |
-| **Express** | 4.x | Web framework for REST API routing |
-| **better-sqlite3** | 9.x | Synchronous SQLite driver - no separate database server needed |
+| **Express** | 5.x | Web framework for REST API routing |
 | **UUID** | 9.x | Unique ID generation for task identifiers |
 | **CORS** | 2.x | Cross-Origin Resource Sharing middleware |
+| **fs (File System)** | Native | Node.js native module for JSON file read/write operations |
 
 ### Why These Choices?
 
-**SQLite over MongoDB/PostgreSQL:**
-- No database server installation required
-- Perfect for single-user desktop-style applications
-- Data persists in a single file (`tasks.db`)
-- Zero configuration needed
+**JSON File Storage over MongoDB/PostgreSQL/SQLite:**
+- No database server or native driver installation required
+- Zero configuration needed - works out of the box on any platform
+- Perfect for single-user applications with moderate data
+- Data persists in a human-readable `tasks.json` file
+- Easy to backup, inspect, and debug
+- No compilation issues on cloud platforms (unlike SQLite native drivers)
+- Compatible with Render's free tier ephemeral storage
 
 **Tailwind CSS over CSS Modules/Styled Components:**
 - Faster development with utility classes
@@ -55,11 +60,11 @@ A full-stack task management application (glorified to-do list) built for the "P
 - Native ES module support
 - Better build performance
 
-**better-sqlite3 over sqlite3:**
-- Synchronous API is simpler for this use case
-- 2-5x faster than asynchronous sqlite3
-- Better stack traces for debugging
-- No callback hell or promise handling needed
+**Express 5.x:**
+- Latest version with improved async error handling
+- Better security defaults
+- Native Promise support
+- Simplified middleware patterns
 
 ---
 
@@ -70,30 +75,40 @@ A full-stack task management application (glorified to-do list) built for the "P
 - **npm** v7 or higher (comes with Node.js)
 
 Verify installation:
-
+```
     node --version  # Should output v16.x.x or higher
     npm --version   # Should output 7.x.x or higher
-
+```
 Step 1: Clone the Repository:
+```
     git clone <your-repository-url>
     cd personal-task-manager
-
+```
 Step 2: Install Backend Dependencies:
+```    
     cd backend
     npm install
+```
 
 Step 3: Install Frontend Dependencies:
+```
+    cd ../frontend
+    npm install
+```
+Step 4: Start the Backend Server:
+```
     cd ../backend
     npm run dev
-
+```
 You should see:
-    🚀 Server is running!
+   ``` 🚀 Server is running!
     📍 URL: http://localhost:3001
     📋 Health check: http://localhost:3001/api/health
-    📝 Tasks API: http://localhost:3001/api/tasks   
+    📝 Tasks API: http://localhost:3001/api/tasks
+    💾 Storage: JSON File
     ✨ Ready to accept requests!
-
-Step 5: Start the Frontend (Open a New Terminal)
+```
+Step 5: Start the Frontend (Open a New Terminal):
     cd frontend
     npm run dev
 
@@ -102,28 +117,28 @@ You should see:
     ➜  Local:   http://localhost:5173/
     ➜  Network: use --host to expose
 
-Step 6: Open the Application
+Step 6: Open the Application:
     Navigate to: http://localhost:5173
-    That's it! The SQLite database (tasks.db) is automatically created in the backend/ folder on the first API request. No additional configuration needed.
+    That's it! The tasks.json file is automatically created in the backend/ folder on the first API request. No additional configuration needed.
 
 Quick Test:
-
-fetch('/api/health')
-  .then(res => res.json())
-  .then(data => console.log('API Response:', data))
+    ```fetch('/api/health')
+      .then(res => res.json())
+      .then(data => console.log('API Response:', data))
+    ```
 
 You should see the health check response, confirming the frontend and backend are connected.
 
 📡 API Documentation
 
-Base URL
+### Base URL:
     http://localhost:3001/api
 
-Common Response Format
+Common Response Format:
 All responses are in JSON format. Timestamps are in ISO 8601 format.
 
-Task Object Schema
-
+### Task Object Schema:
+```
     {
         "id": "550e8400-e29b-41d4-a716-446655440000",
         "title": "Buy groceries",
@@ -133,7 +148,7 @@ Task Object Schema
         "created_at": "2024-01-01T12:00:00.000Z",
         "updated_at": "2024-01-01T12:00:00.000Z"
     }
-
+```
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -145,15 +160,19 @@ Task Object Schema
 | `created_at` | string (ISO 8601) | Creation timestamp |
 | `updated_at` | string (ISO 8601) | Last update timestamp |
   
-1. Health Check
+## 1. Health Check:
 Check if the server is running.
-    GET /api/health
+```    
+GET /api/health 
+```
 
-Response (200 OK):
+### Response (200 OK):
+```
 {
   "status": "ok",
   "message": "Server is running!",
   "timestamp": "2024-06-06T12:00:00.000Z",
+  "storage": "JSON File",
   "endpoints": {
     "getTasks": "GET /api/tasks",
     "createTask": "POST /api/tasks",
@@ -162,8 +181,8 @@ Response (200 OK):
     "toggleTask": "PATCH /api/tasks/:id/toggle"
   }
 }
-
-2. Get All Tasks
+```
+## 2. Get All Tasks:
 Retrieve tasks with optional filtering and search.
 GET /api/tasks
 
@@ -173,6 +192,7 @@ Query Parameters:
 | `status` | string | No | Filter tasks by completion status | `active` or `completed` |
 | `search` | string | No | Search tasks by title (case-insensitive, partial match) | `groceries` |
 
+```
 Examples:
 GET /api/tasks                          # All tasks
 GET /api/tasks?status=active            # Only active tasks
@@ -201,23 +221,24 @@ Response (200 OK):
     "updated_at": "2024-01-01T13:00:00.000Z"
   }
 ]
-
+```
 Notes:
 Results are always ordered by created_at descending (newest first)
 Empty search returns all tasks matching the status filter
 No tasks found returns an empty array []
 
-3. Create Task
+## 3. Create Task:
 Create a new task. Title is required.
-POST /api/tasks
+```POST /api/tasks```
 
-
+```
 Request Body:
 {
   "title": "Buy groceries",
   "description": "Milk, eggs, bread",
   "dueDate": "2024-12-31"
 }
+```
 
 | Field | Type | Required | Validation |
 |-------|------|----------|------------|
@@ -226,6 +247,7 @@ Request Body:
 | `dueDate` | string | No | Should be YYYY-MM-DD format; defaults to null |
 
 Response (201 Created):
+```
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "title": "Buy groceries",
@@ -235,18 +257,23 @@ Response (201 Created):
   "created_at": "2024-01-01T12:00:00.000Z",
   "updated_at": "2024-01-01T12:00:00.000Z"
 }
+```
 
 Error Response (400 Bad Request):
+```
 {
   "error": "Title is required"
 }
+```
 
 Error Response (500 Internal Server Error):
+```
 {
   "error": "Failed to create task"
 }
+```
 
-4. Update Task
+## 4. Update Task:
 Update one or more fields of an existing task. Only provide the fields you want to change.
 PUT /api/tasks/:id
 
@@ -256,12 +283,14 @@ URL Parameters:
 | `id` | string (UUID) | The ID of the task to update |
 
 Request Body (all fields optional):
+```
 {
   "title": "Updated title",
   "description": "Updated description",
   "dueDate": "2024-12-25",
   "completed": true
 }
+```
 
 | Field | Type | Notes |
 |-------|------|-------|
@@ -270,7 +299,8 @@ Request Body (all fields optional):
 | `dueDate` | string | Update due date (YYYY-MM-DD) |
 | `completed` | boolean | `true` to mark complete, `false` to mark active |
 
-Response (200 OK):
+### Response (200 OK):
+```
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "title": "Updated title",
@@ -280,13 +310,14 @@ Response (200 OK):
   "created_at": "2024-01-01T12:00:00.000Z",
   "updated_at": "2024-01-01T12:30:00.000Z"
 }
-
-Error Response (404 Not Found):
+```
+### Error Response (404 Not Found):
+```
 {
   "error": "Task not found"
 }
-
-5. Delete Task
+```
+5. Delete Task:
 Permanently delete a task.
 DELETE /api/tasks/:id
 
@@ -295,7 +326,8 @@ URL Parameters:
 |-----------|------|-------------|
 | `id` | string (UUID) | The ID of the task to delete |
 
-Response (200 OK):
+### Response (200 OK):
+```
 {
   "message": "Task deleted successfully",
   "deletedTask": {
@@ -308,13 +340,16 @@ Response (200 OK):
     "updated_at": "2024-01-01T12:00:00.000Z"
   }
 }
+```
 
 Error Response (404 Not Found):
+```
 {
   "error": "Task not found"
 }
+```
 
-6. Toggle Task Completion
+## 6. Toggle Task Completion:
 Quick toggle to mark a task as complete or active.
 PATCH /api/tasks/:id/toggle
 
@@ -323,7 +358,9 @@ URL Parameters:
 |-----------|------|-------------|
 | `id` | string (UUID) | The ID of the task to toggle |
 
-Response (200 OK):
+### Response (200 OK):
+
+```
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "title": "Buy groceries",
@@ -333,8 +370,9 @@ Response (200 OK):
   "created_at": "2024-01-01T12:00:00.000Z",
   "updated_at": "2024-01-01T12:30:00.000Z"
 }
+```
 
-Notes:
+### Notes:
 
 1. If task was active (completed: 0), toggles to completed (completed: 1)
 
@@ -342,26 +380,34 @@ Notes:
 
 3. Does not require a request body
 
-Testing the API:
+### Testing the API:
 Using curl (Mac/Linux/Git Bash):
 # Health check
+```
 curl http://localhost:3001/api/health
-
+```
 # Create a task
+```
 curl -X POST http://localhost:3001/api/tasks \
   -H "Content-Type: application/json" \
   -d '{"title":"Test task","description":"Testing the API"}'
+```
 
 # Get all tasks
+```
 curl http://localhost:3001/api/tasks
+
 
 # Search tasks
 curl "http://localhost:3001/api/tasks?search=test"
 
 # Filter active tasks
 curl "http://localhost:3001/api/tasks?status=active"
+```
 
-Using PowerShell (Windows):
+# Using PowerShell (Windows):
+
+```
 # Health check
 Invoke-RestMethod http://localhost:3001/api/health
 
@@ -375,10 +421,11 @@ Invoke-RestMethod http://localhost:3001/api/tasks
 # Run comprehensive test suite
 cd backend
 .\full-test.ps1
+```
 
 # 📁 Project Structure
 
-personal-task-manager/
+```personal-task-manager/
 │
 ├── backend/                              # Express API Server (Port 3001)
 │   ├── src/
@@ -389,17 +436,18 @@ personal-task-manager/
 │   │   │                                  #   - PUT /api/tasks/:id (update)
 │   │   │                                  #   - DELETE /api/tasks/:id (delete)
 │   │   │                                  #   - PATCH /api/tasks/:id/toggle
-│   │   ├── database.js                   # SQLite database connection & schema
-│   │   │                                  #   - Creates tasks.db file
-│   │   │                                  #   - Creates tasks table if not exists
-│   │   │                                  #   - Enables WAL mode for performance
+│   │   ├── database.js                   # JSON file storage operations
+│   │   │                                  #   - Creates tasks.json file
+│   │   │                                  #   - Reads/writes task data
+│   │   │                                  #   - Filters and searches tasks
+│   │   │                                  #   - Handles CRUD operations
 │   │   └── index.js                      # Express server entry point
 │   │                                      #   - Middleware setup (CORS, JSON)
 │   │                                      #   - Route mounting
 │   │                                      #   - Error handling
 │   ├── full-test.ps1                     # Comprehensive 16-test API test suite (PowerShell)
 │   ├── package.json                      # Backend dependencies & scripts
-│   │                                      #   Dependencies: express, cors, better-sqlite3, uuid
+│   │                                      #   Dependencies: express, cors, uuid
 │   │                                      #   Dev: nodemon
 │   └── .env.example                      # Environment variables template
 │
@@ -463,8 +511,9 @@ personal-task-manager/
 │                                          #   - node_modules/
 │                                          #   - dist/
 │                                          #   - .env
-│                                          #   - *.db
+│                                          #   - *.json (database file)
 └── README.md                             # Project documentation (this file)
+```
 
 ## 🎯 Features Implemented
 
@@ -483,7 +532,7 @@ personal-task-manager/
 
 ### Nice to Have ✅
 - [x] Search tasks by title (case-insensitive, partial match)
-- [x] Persistent storage with SQLite (survives server restarts)
+- [x] Persistent storage with JSON file (survives server restarts)
 - [x] Dark mode toggle with system preference detection
 - [x] Keyboard shortcuts for power users
 - [x] Progress bar showing completion percentage
@@ -547,7 +596,7 @@ personal-task-manager/
 | **Drag-and-Drop Reordering** | Listed as "Nice to Have" bonus. Prioritized core CRUD functionality and UI polish over this feature. Would use `react-beautiful-dnd` or `@dnd-kit/core`. |
 | **Unit/E2E Tests** | Testing was optional per requirements. Focused on manual testing and a comprehensive API test script. Would add Jest + React Testing Library. |
 | **TypeScript** | Exercise allowed JavaScript or TypeScript. Used JavaScript for faster initial development. TypeScript would add type safety. |
-| **MongoDB/PostgreSQL** | Requirements allowed SQLite. Chose it for zero-configuration and simplicity. A production multi-user app would benefit from PostgreSQL. |
+| **MongoDB/PostgreSQL** | Requirements allowed JSON file/SQLite. Chose JSON file storage for zero-configuration, no native dependencies, and Render free tier compatibility. A production multi-user app would benefit from PostgreSQL. |
 | **File Attachments** | Out of scope for a basic task manager. |
 | **Recurring Tasks** | Out of scope but would be a valuable addition. |
 | **Email/Push Notifications** | Requires additional infrastructure and services. |
@@ -600,7 +649,7 @@ personal-task-manager/
 - **Email Notifications:** Email reminders and collaboration notifications
 - **Calendar Integration:** Sync tasks with Google Calendar/Outlook
 
-#### Phase 6 - Platform Expansion (Ongoing)
+#### Phase 6 - Platform Expansion 
 - **PWA Support:** Install as mobile/desktop app with offline capability
 - **Mobile Apps:** React Native for iOS/Android
 - **API Versioning:** Support multiple API versions
